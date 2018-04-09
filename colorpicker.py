@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors
 
+HUE, SATURATION, VALUE = 0, 1, 2
+
 class Swatch(object):
 
     annotation_props = dict(boxstyle = "square", fc = (0.9, 0.9, 0.9, 1.0), ec = (0.1, 0.1, 0.1, 1.0))
@@ -85,7 +87,7 @@ class Swatch(object):
 
 class ColorViewer(object):
 
-    def __init__(self, fig, colormap = None, bin_size = 5, sort_order = [ 2, 1, 0 ]):
+    def __init__(self, ax, colormap = None, bin_size = 5, sort_order = [ VALUE, SATURATION, HUE ]):
 
         if colormap is None:
             colormap = mcolors.get_named_colors_mapping()
@@ -100,11 +102,8 @@ class ColorViewer(object):
                 groups[gr] = [ ]
             groups[gr].append(name)
 
-        self.fig = fig
         self.state = { "selected": None, "background": None }
         self.swatches = [ ]
-
-        ax = fig.gca()
 
         hue = lambda c: hsv[names.index(c)][0]
         ordered = lambda c: [ hsv[names.index(c)][i] for i in sort_order ]
@@ -120,13 +119,14 @@ class ColorViewer(object):
                 if y > max_y:
                     max_y = y
 
-        ax.set_xlim(0, len(groups) + 1), ax.set_ylim(0, max_y + 1)
+        ax.set_xlim(0, len(groups)), ax.set_ylim(0, max_y + 1)
         ax.set_axis_off()
         ax.figure.subplots_adjust(left = 0.02, right = 0.98, top = 0.98, bottom = 0.02, hspace = 0, wspace = 0)
-        self.state["background"] = fig.canvas.copy_from_bbox(ax.bbox)
+        self.state["background"] = ax.get_figure().canvas.copy_from_bbox(ax.bbox)
 
     @property
     def selected(self):
+        return tuple(self.state["selected"].rect.get_fc()[:3]) if self.state["selected"] else None
 
-        return self.state["selected"].rect.get_fc() if self.state["selected"] else None
-
+    def selected_with_alpha(self, alpha):
+        return tuple(self.state["selected"].rect.get_fc()[:3], alpha) if self.state["selected"] else None
