@@ -9,6 +9,8 @@ class ColorViewer(object):
 
     def __init__(self, ax, colormap = None, bin_size = 5, sort_order = [ VALUE, SATURATION, HUE ], transpose = False):
 
+        self.ax = ax
+
         if colormap is None:
             colormap = mcolors.get_named_colors_mapping()
         rgbvals = dict([ (n, mcolors.to_rgb(c)) for n, c in colormap.iteritems() ])
@@ -24,6 +26,7 @@ class ColorViewer(object):
 
         self.state = { "selected": None, "background": None }
         self.swatches = [ ]
+        self.rgb_to_swatch, self.label_to_swatch = { }, { }
 
         hue = lambda c: hsv[names.index(c)][0]
         ordered = lambda c: [ hsv[names.index(c)][i] for i in sort_order ]
@@ -39,6 +42,8 @@ class ColorViewer(object):
                 sw = Swatch(r, name, self.state)
                 sw.connect()
                 self.swatches.append(sw)
+                self.rgb_to_swatch[rgbvals[name]] = sw
+                self.label_to_swatch[name] = sw
                 if y > max_y:
                     max_y = y
 
@@ -50,15 +55,19 @@ class ColorViewer(object):
         ax.figure.subplots_adjust(left = 0.02, right = 0.98, top = 0.98, bottom = 0.02, hspace = 0, wspace = 0)
         self.state["background"] = ax.get_figure().canvas.copy_from_bbox(ax.bbox)
 
-    def highlight(self, label):
+    def highlight(self, item):
 
-        for swatch in self.swatches:
-            if swatch.label == label:
-                swatch.select()
-                if self.state["selected"] is not None:
-                    self.state["selected"].deselect()
-                self.state["selected"] = swatch
-                break
+        if isinstance(item, (str, unicode)):
+            swatch = self.label_to_swatch[item]
+        elif isinstance(item, tuple):
+            swatch = self.rgb_to_swatch[item[:3]]
+        else:
+            raise Exception("Invalid argument: %s" % str(item))
+
+        swatch.select()
+        if self.state["selected"] is not None:
+            self.state["selected"].deselect()
+        self.state["selected"] = swatch
 
     @property
     def selected(self):
