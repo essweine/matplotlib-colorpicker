@@ -5,6 +5,68 @@ from matplotlib import colors as mcolors
 
 HUE, SATURATION, VALUE = 0, 1, 2
 
+class ColorViewer(object):
+
+    def __init__(self, ax, colormap = None, bin_size = 5, sort_order = [ VALUE, SATURATION, HUE ], transpose = False):
+
+        if colormap is None:
+            colormap = mcolors.get_named_colors_mapping()
+        rgbvals = dict([ (n, mcolors.to_rgb(c)) for n, c in colormap.iteritems() ])
+        colors = dict([ (n, c) for n, c in rgbvals.iteritems() if all([ v != c[0] for v in c[1:] ]) ])
+        hsv, names = zip(*sorted([ (tuple(mcolors.rgb_to_hsv(color)), name) for name, color in colors.iteritems() ]))
+
+        groups = { }
+        bins = np.arange(0, 360, bin_size) * (1.0 / 360)
+        for gr, name in zip(np.digitize([ h for h, s, v in hsv ], bins), names):
+            if gr not in groups:
+                groups[gr] = [ ]
+            groups[gr].append(name)
+
+        self.state = { "selected": None, "background": None }
+        self.swatches = [ ]
+
+        hue = lambda c: hsv[names.index(c)][0]
+        ordered = lambda c: [ hsv[names.index(c)][i] for i in sort_order ]
+        max_y = 0
+
+        for x, grp in enumerate(sorted(groups.itervalues(), key = lambda v: hue(v[0]))):
+            for y, name in enumerate(sorted(grp, key = lambda n: ordered(n))):
+                if transpose:
+                    r = plt.Rectangle((y + 0.1, x + 0.1), 0.8, 0.8, color = rgbvals[name])
+                else:
+                    r = plt.Rectangle((x + 0.1, y + 0.1), 0.8, 0.8, color = rgbvals[name])
+                ax.add_artist(r)
+                sw = Swatch(r, name, self.state)
+                sw.connect()
+                self.swatches.append(sw)
+                if y > max_y:
+                    max_y = y
+
+        if transpose:
+            ax.set_xlim(0, max_y + 1), ax.set_ylim(0, len(groups))
+        else:
+            ax.set_xlim(0, len(groups)), ax.set_ylim(0, max_y + 1)
+        ax.set_axis_off()
+        ax.figure.subplots_adjust(left = 0.02, right = 0.98, top = 0.98, bottom = 0.02, hspace = 0, wspace = 0)
+        self.state["background"] = ax.get_figure().canvas.copy_from_bbox(ax.bbox)
+
+    def highlight(self, label):
+
+        for swatch in self.swatches:
+            if swatch.label == label:
+                swatch.select()
+                if self.state["selected"] is not None:
+                    self.state["selected"].deselect()
+                self.state["selected"] = swatch
+                break
+
+    @property
+    def selected(self):
+        return tuple(self.state["selected"].rect.get_fc()[:3]) if self.state["selected"] else None
+
+    def selected_with_alpha(self, alpha):
+        return tuple(self.state["selected"].rect.get_fc()[:3], alpha) if self.state["selected"] else None
+
 class Swatch(object):
 
     annotation_props = dict(boxstyle = "square", fc = (0.9, 0.9, 0.9, 1.0), ec = (0.1, 0.1, 0.1, 1.0))
@@ -85,58 +147,3 @@ class Swatch(object):
         self.rect.figure.canvas.mpl_disconnect(self.cidpress)
         self.rect.figure.canvas.mpl_disconnect(self.motion)
 
-class ColorViewer(object):
-
-    def __init__(self, ax, colormap = None, bin_size = 5, sort_order = [ VALUE, SATURATION, HUE ]):
-
-        if colormap is None:
-            colormap = mcolors.get_named_colors_mapping()
-        rgbvals = dict([ (n, mcolors.to_rgb(c)) for n, c in colormap.iteritems() ])
-        colors = dict([ (n, c) for n, c in rgbvals.iteritems() if all([ v != c[0] for v in c[1:] ]) ])
-        hsv, names = zip(*sorted([ (tuple(mcolors.rgb_to_hsv(color)), name) for name, color in colors.iteritems() ]))
-
-        groups = { }
-        bins = np.arange(0, 360, bin_size) * (1.0 / 360)
-        for gr, name in zip(np.digitize([ h for h, s, v in hsv ], bins), names):
-            if gr not in groups:
-                groups[gr] = [ ]
-            groups[gr].append(name)
-
-        self.state = { "selected": None, "background": None }
-        self.swatches = [ ]
-
-        hue = lambda c: hsv[names.index(c)][0]
-        ordered = lambda c: [ hsv[names.index(c)][i] for i in sort_order ]
-        max_y = 0
-
-        for x, grp in enumerate(sorted(groups.itervalues(), key = lambda v: hue(v[0]))):
-            for y, name in enumerate(sorted(grp, key = lambda n: ordered(n))):
-                r = plt.Rectangle((x + 0.1, y + 0.1), 0.8, 0.8, color = rgbvals[name])
-                ax.add_artist(r)
-                sw = Swatch(r, name, self.state)
-                sw.connect()
-                self.swatches.append(sw)
-                if y > max_y:
-                    max_y = y
-
-        ax.set_xlim(0, len(groups)), ax.set_ylim(0, max_y + 1)
-        ax.set_axis_off()
-        ax.figure.subplots_adjust(left = 0.02, right = 0.98, top = 0.98, bottom = 0.02, hspace = 0, wspace = 0)
-        self.state["background"] = ax.get_figure().canvas.copy_from_bbox(ax.bbox)
-
-    def highlight(self, label):
-
-        for swatch in self.swatches:
-            if swatch.label == label:
-                swatch.select()
-                if self.state["selected"] is not None:
-                    self.state["selected"].deselect()
-                self.state["selected"] = swatch
-                break
-
-    @property
-    def selected(self):
-        return tuple(self.state["selected"].rect.get_fc()[:3]) if self.state["selected"] else None
-
-    def selected_with_alpha(self, alpha):
-        return tuple(self.state["selected"].rect.get_fc()[:3], alpha) if self.state["selected"] else None
