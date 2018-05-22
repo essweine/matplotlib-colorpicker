@@ -124,6 +124,16 @@ class ColorViewer(object):
         ax.figure.subplots_adjust(left = 0.02, right = 0.98, top = 0.98, bottom = 0.02, hspace = 0, wspace = 0)
         self.state["background"] = ax.get_figure().canvas.copy_from_bbox(ax.bbox)
 
+    def highlight(self, label):
+
+        for swatch in self.swatches:
+            if swatch.label == label:
+                swatch.select()
+                if self.state["selected"] is not None:
+                    self.state["selected"].deselect()
+                self.state["selected"] = swatch
+                break
+
     @property
     def selected(self):
         return tuple(self.state["selected"].rect.get_fc()[:3]) if self.state["selected"] else None
