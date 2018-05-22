@@ -5,8 +5,8 @@ Groups colors based on HSV and plots swatches in a matplotlib figure.
 ## Basic Usage
 ```
 from colorpicker import *
-fig = plt.figure()
-cview = ColorViewer(fig)
+fig, ax = plt.subplots()
+cview = ColorViewer(ax)
 ```
 
 Hover over a color to see the name; click on the color to select it.
