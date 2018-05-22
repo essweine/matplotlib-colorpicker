@@ -1,10 +1,42 @@
 # Simple color picker for matplotlib
 
-Groups colors based on HSV and plots swatches in a matplotlib figure.
+Groups colors based on HSV and plots swatches in a matplotlib figure.  Allows assignment of colors to a list of values in a legend-like container.
 
-## Basic Usage
+## Color Picker Usage
+
 ```
 from colorpicker import *
+items = [
+    ("item 1", "xkcd:spruce"),
+    ("item 2", "xkcd:dark mint green"),
+    ("item 3", "xkcd:spearmint"),
+    ("item 4", None),
+]
+fig, ax = plt.subplots()
+cp = ColorPicker(ax, { "transpose": True }, { "font_size": 8, "pad": 4 }, items)
+```
+
+Add additional items:
+
+```
+cp.add_item("item 5", None)
+```
+
+Left click the item's rectangle to highlight the patch in the color display (if not None).
+Right click to assign the currently selected color in the display.
+
+To get a dictionary of currently assigned colors:
+
+```
+cp.get_dict()
+```
+
+## Color Viewer Usage
+
+To use only the right half (color display):
+
+```
+from colorviewer import *
 fig, ax = plt.subplots()
 cview = ColorViewer(ax)
 ```
@@ -17,7 +49,7 @@ cview.selected
 
 returns the RGBA value of the currently selected color.
 
-## Optional arguments
+### Optional arguments
 
 #### named color mapping
 The default is any named color defined in matplotlib.colors.  You can also use one of the more specific mpl named color sets, or create your own dictionary of name -> hex values.
