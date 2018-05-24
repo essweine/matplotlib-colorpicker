@@ -20,8 +20,8 @@ class ColorPicker(object):
 
         divider = make_axes_locatable(ax)
         pad = Size.Fixed(0.1)
-        colormap_width = Size.Fraction(0.39, Size.AxesX(ax))
-        cview_width = Size.Fraction(0.6, Size.AxesX(ax))
+        colormap_width = Size.Fraction(0.29, Size.AxesX(ax))
+        cview_width = Size.Fraction(0.7, Size.AxesX(ax))
         divider.set_horizontal([ colormap_width, pad, cview_width ])
 
         cmap_ax.set_axes_locator(divider.new_locator(nx = 0, ny = 0))
@@ -36,6 +36,10 @@ class ColorPicker(object):
     def add_item(self, name, color):
 
         self.colormap.add_item(name, color)
+
+    def update_width(self):
+
+        self.colormap.update_width()
 
     def get_dict(self):
 
@@ -62,6 +66,12 @@ class MapDisplay(object):
     def add_item(self, name, color = None):
 
         self.colors[name] = DisplayItem(self, name, color)
+
+    def update_width(self):
+
+        transform = self.ax.transData.inverted()
+        width = max([ transform.transform(text.get_window_extent())[1, 0] for text in self.ax.texts ])
+        self.ax.set_xlim(0, width + 0.05)
 
 class DisplayItem(object):
 
