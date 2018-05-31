@@ -3,23 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors as mcolors
 
-HUE, SATURATION, VALUE = 0, 1, 2
-
 class ColorViewer(object):
 
-    def __init__(self, ax, colormap = None, bin_size = 5, sort_order = [ VALUE, SATURATION, HUE ], transpose = False):
+    def __init__(self, ax, colormap = None, bin_size = 5, transpose = False):
 
         self.ax = ax
-
         if colormap is None:
             colormap = mcolors.get_named_colors_mapping()
-        rgbvals = dict([ (n, mcolors.to_rgb(c)) for n, c in colormap.iteritems() ])
-        colors = dict([ (n, c) for n, c in rgbvals.iteritems() if all([ v != c[0] for v in c[1:] ]) ])
-        hsv, names = zip(*sorted([ (tuple(mcolors.rgb_to_hsv(color)), name) for name, color in colors.iteritems() ]))
+        rgb = dict([ (n, mcolors.to_rgb(c)) for n, c in colormap.iteritems() ])
+        hsv = dict([ (n, mcolors.rgb_to_hsv(c)) for n, c in rgb.iteritems() ])
+        colors = [ n for n, c in rgb.iteritems() if all([ v != c[0] for v in c[1:] ]) ]
 
         groups = { }
         bins = np.arange(0, 360, bin_size) * (1.0 / 360)
-        for gr, name in zip(np.digitize([ h for h, s, v in hsv ], bins), names):
+        names, hues = zip(*[ (n, h) for n, (h, s, v) in hsv.iteritems() ])
+        for gr, name in zip(np.digitize(hues, bins), names):
             if gr not in groups:
                 groups[gr] = [ ]
             groups[gr].append(name)
@@ -28,21 +26,20 @@ class ColorViewer(object):
         self.swatches = [ ]
         self.rgb_to_swatch, self.label_to_swatch = { }, { }
 
-        hue = lambda c: hsv[names.index(c)][0]
-        ordered = lambda c: [ hsv[names.index(c)][i] for i in sort_order ]
+        ordered = lambda c: (c[2], c[1] * -1.0, c[0])
         max_y = 0
 
-        for x, grp in enumerate(sorted(groups.itervalues(), key = lambda v: hue(v[0]))):
-            for y, name in enumerate(sorted(grp, key = lambda n: ordered(n))):
+        for x, grp in enumerate(sorted(groups.itervalues(), key = lambda v: hsv[v[0]][0])):
+            for y, name in enumerate(sorted(grp, key = lambda n: ordered(hsv[n]))):
                 if transpose:
-                    r = plt.Rectangle((y + 0.1, x + 0.1), 0.8, 0.8, color = rgbvals[name])
+                    r = plt.Rectangle((y + 0.1, x + 0.1), 0.8, 0.8, color = rgb[name])
                 else:
-                    r = plt.Rectangle((x + 0.1, y + 0.1), 0.8, 0.8, color = rgbvals[name])
+                    r = plt.Rectangle((x + 0.1, y + 0.1), 0.8, 0.8, color = rgb[name])
                 ax.add_artist(r)
                 sw = Swatch(r, name, self.state)
                 sw.connect()
                 self.swatches.append(sw)
-                self.rgb_to_swatch[rgbvals[name]] = sw
+                self.rgb_to_swatch[rgb[name]] = sw
                 self.label_to_swatch[name] = sw
                 if y > max_y:
                     max_y = y

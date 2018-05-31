@@ -57,9 +57,6 @@ The default is any named color defined in matplotlib.colors.  You can also use o
 #### bin_size
 Size of group, in degrees (corresponding to hue value if plotted in polar coordinates).  The default is 5.
 
-#### sort_order
-Within group sort parameter.  I like darker colors to appear at the bottom to the extent possible, so the default sort order is reversed; for strict HSV sorting, use [ 0, 1, 2 ].
-
 ## Caveats
 
 No documentation other than this file, error handling, or tests; sorry.
