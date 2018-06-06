@@ -5,7 +5,7 @@ from matplotlib import colors as mcolors
 
 class ColorViewer(object):
 
-    def __init__(self, ax, colormap = None, bin_size = 5, transpose = False):
+    def __init__(self, ax, colormap = None, bin_size = 5, transpose = False, events = [ "press", "hover" ]):
 
         self.ax = ax
         if colormap is None:
@@ -37,7 +37,7 @@ class ColorViewer(object):
                     r = plt.Rectangle((x + 0.1, y + 0.1), 0.8, 0.8, color = rgb[name])
                 ax.add_artist(r)
                 sw = Swatch(r, name, self.state)
-                sw.connect()
+                sw.connect(events)
                 self.swatches.append(sw)
                 self.rgb_to_swatch[rgb[name]] = sw
                 self.label_to_swatch[name] = sw
@@ -86,10 +86,12 @@ class Swatch(object):
         self.annotation = self.rect.axes.text(x, y, label, bbox = Swatch.annotation_props, visible = False)
         self.state = state
 
-    def connect(self):
+    def connect(self, events = [ "press", "hover" ]):
 
-        self.cidpress = self.rect.figure.canvas.mpl_connect('button_press_event', self.on_press)
-        self.cidmotion = self.rect.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        if "press" in events:
+            self.cidpress = self.rect.figure.canvas.mpl_connect('button_press_event', self.on_press)
+        if "hover" in events:
+            self.cidmotion = self.rect.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
 
     def select(self):
 
